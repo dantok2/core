@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORE Workspace — AI Avatar Production Pipeline</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --bg-main: #050506;
+            --accent: #FF7A00;
+            --accent-glow: rgba(255, 122, 0, 0.15);
+            --border: rgba(255, 255, 255, 0.06);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-blur: blur(24px);
+            --text-main: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --text-dark: rgba(255, 255, 255, 0.3);
+            --success: #00E676;
+            --warning: #FFD600;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 260px;
+            border-right: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.01);
+            backdrop-filter: var(--glass-blur);
+            display: flex;
+            flex-direction: column;
+            padding: 32px 24px;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 0.05em;
+        }
+
+        .brand-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .brand-dot {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 48px;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: var(--text-main);
+            background: var(--glass-bg);
+        }
+
+        .nav-item.active {
+            color: var(--text-main);
+            background: var(--glass-bg);
+            border-color: var(--border);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .nav-item .icon {
+            font-size: 16px;
+            width: 20px;
+        }
+
+        .user-panel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .avatar-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #222;
+            border: 1px solid var(--border);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Main Workspace Container */
+        .workspace {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            background: radial-gradient(circle at 70% 30%, rgba(255, 122, 0, 0.03), transparent 60%);
+        }
+
+        /* Top Header Navigation for Prototype */
+        .top-bar {
+            height: 72px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            background: rgba(5, 5, 6, 0.5);
+            backdrop-filter: var(--glass-blur);
+            z-index: 9;
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .system-status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Content Frames wrapper */
+        .content-frame {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: none;
+            height: calc(100vh - 72px);
+        }
+
+        .content-frame.active {
+            display: block;
+        }
+
+        /* Grid Layout Patterns */
+        .grid-3x3 {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 32px;
+            height: 100%;
+        }
+
+        .main-canvas {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            position: relative;
+        }
+
+        /* Component Cards Design (Pragmatica / Web3 Style) */
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: var(--glass-blur);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 4px 30px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Screen 1 specific elements: 3D Face space & Sliders */
+        .avatar-viewport {
+            flex-grow: 1;
+            min-height: 400px;
+            background: radial-gradient(circle at center, #111115 0%, #050506 100%);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .wireframe-mesh {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 122, 0, 0.2);
+            position: relative;
+            animation: rotateMesh 20s linear infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wireframe-mesh::before {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            box-shadow: 0 0 40px rgba(255, 122, 0, 0.05);
+        }
+
+        .face-avatar-core {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            background: linear-gradient(135deg, #1f1f24, #0d0d11);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 122, 0, 0.3);
+            box-shadow: 0 0 30px var(--accent-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 32px;
+            color: var(--accent);
+        }
+
+        .laser-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            top: 20%;
+            animation: scanLaser 3s ease-in-out infinite;
+            box-shadow: 0 0 12px var(--accent);
+        }
+
+        /* Floating Carousel Cards style */
+        .carousel-overlay {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .carousel-card {
+            min-width: 180px;
+            background: rgba(15, 15, 20, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .carousel-card.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .tag-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            width: fit-content;
+        }
+
+        .tag-success { background: rgba(0, 230, 118, 0.1); color: var(--success); }
+        .tag-progress { background: rgba(255, 122, 0, 0.1); color: var(--accent); }
+
+        /* Control Sliders Style */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+        }
+
+        .custom-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.06);
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent);
+            transition: transform 0.1s;
+        }
+
+        .custom-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Screen 2 specific elements: Fintech & Tables */
+        .fintech-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+
+        .balance-value {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .trend-up {
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--success);
+            background: rgba(0, 230, 118, 0.08);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 400;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            transition: all 0.2s;
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(255, 122, 0, 0.3);
+        }
+
+        /* Structural B2B Table pattern */
+        .b2b-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 12px;
+        }
+
+        .b2b-table th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 500;
+        }
+
+        .b2b-table td {
+            padding: 20px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .b2b-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .b2b-table tr:hover td {
+            background: rgba(255,255,255,0.01);
+        }
+
+        .brand-meta {
+            font-weight: 600;
+        }
+
+        .mono-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        /* Screen 3 elements: Dataset Matrix & Upload boxes */
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            background: rgba(255,255,255,0.01);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            transition: all 0.2s;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: rgba(255, 122, 0, 0.01);
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            color: var(--text-muted);
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .upload-text span {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* SVG Graph styling */
+        .svg-graph-container {
+            width: 100%;
+            height: 120px;
+            margin-top: 16px;
+        }
+
+        /* Animations */
+        @keyframes rotateMesh {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes scanLaser {
+            0%, 100% { top: 15%; }
+            50% { top: 85%; }
+        }
+
+        .bottom-rooms {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 8px;
+        }
+
+        .room-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Layout -->
+    <div class="sidebar">
+        <div>
+            <div class="brand">
+                <div class="brand-icon">🔥</div>
+                <span>CORE<span class="brand-dot">.</span></span>
+            </div>
+            
+            <div class="nav-links">
+                <div class="nav-item active" onclick="switchTab('tab-production', this)">
+                    <span class="icon">🎛️</span>
+                    <span>Production Feed</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('tab-finance', this)">
+                    <span class="icon">💸</span>
+                    <span>Brand Contracts</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('tab-matrix', this)">
+                    <span class="icon">🧠</span>
+                    <span>Dataset Matrix</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="user-panel">
+            <div class="avatar-img" style="background: linear-gradient(45deg, #FF7A00, #FF5500);"></div>
+            <div class="user-info">
+                <span class="user-name">Misha Sorokin</span>
+                <span class="user-role">ID_AVATAR_01</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Hub -->
+    <div class="workspace">
+        <div class="top-bar">
+            <div class="page-title" id="current-page-title">Content Production Pipeline</div>
+            <div class="system-status">
+                <div class="status-indicator"></div>
+                <span>NEURAL ENGINE v3.4 // LINK ESTABLISHED</span>
+            </div>
+        </div>
+
+        <!-- SCREEN 1: CONTENT PRODUCTION PIPELINE -->
+        <div id="tab-production" class="content-frame active">
+            <div class="grid-3x3">
+                <div class="main-canvas">
+                    <div class="avatar-viewport">
+                        <div class="laser-line"></div>
+                        <div class="wireframe-mesh">
+                            <div class="face-avatar-core">AI</div>
+                        </div>
+                        
+                        <!-- Floating карусель постов -->
+                        <div class="carousel-overlay">
+                            <div class="carousel-card active">
+                                <div class="tag-mono tag-success">RENDER COMPLETE</div>
+                                <span style="font-size: 12px; font-weight:600;">ID_SHORT_0921</span>
+                                <span style="font-size: 11px; color: var(--text-muted);">0:15s // Techwear Review</span>
+                            </div>
+                            <div class="carousel-card">
+                                <div class="tag-mono tag-progress">COMPUTING 74%</div>
+                                <span style="font-size: 12px; font-weight:600;">ID_REELS_0922</span>
+                                <span style="font-size: 11px; color: var(--text-muted);">EST: 14s remaining</span>
+                            </div>
+                            <div class="carousel-card">
+                                <div class="tag-mono tag-progress" style="background:rgba(255,255,255,0.05); color:#aaa;">QUEUED</div>
+                                <span style="font-size: 12px; font-weight:600;">ID_YT_0923</span>
+                                <span style="font-size: 11px; color: var(--text-muted);">0:30s // AI Future Look</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Rooms -->
+                    <div class="bottom-rooms">
+                        <div class="glass-card">
+                            <div class="card-header-mono">TikTok Pipeline</div>
+                            <div style="font-size: 20px; font-weight: 700;">32 Clips</div>
+                            <div class="room-desc">Generated & auto-scheduled this week.</div>
+                        </div>
+                        <div class="glass-card">
+                            <div class="card-header-mono">Audio Sync</div>
+                            <div style="font-size: 20px; font-weight: 700;">100% Perfect</div>
+                            <div class="room-desc">Voice clones matching algorithm locked.</div>
+                        </div>
+                        <div class="glass-card">
+                            <div class="card-header-mono">Retention Rate</div>
+                            <div style="font-size: 20px; font-weight: 700; color: var(--success);">84.3%</div>
+                            <div class="room-desc">Average organic audience watch-time.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sliders (Hypothesis 2) -->
+                <div class="glass-card control-panel">
+                    <div>
+                        <div class="card-header-mono">Neural Parameters</div>
+                        <h3 style="font-size: 15px; margin-bottom: 24px; font-weight: 600;">Engine Live Tuning</h3>
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label-row">
+                            <span>Neural Voice Deepness</span>
+                            <span class="slider-value" id="val-voice">45%</span>
+                        </div>
+                        <input type="range" class="custom-slider" min="0" max="100" value="45" oninput="updateSlider('val-voice', this.value)">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label-row">
+                            <span>Facial Expression Index</span>
+                            <span class="slider-value" id="val-face">74%</span>
+                        </div>
+                        <input type="range" class="custom-slider" min="0" max="100" value="74" oninput="updateSlider('val-face', this.value)">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label-row">
+                            <span>Lip-Sync Micro-Match</span>
+                            <span class="slider-value">98.2%</span>
+                        </div>
+                        <input type="range" class="custom-slider" min="0" max="100" value="98" disabled>
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label-row">
+                            <span>Subtle Motion Blur</span>
+                            <span class="slider-value">12%</span>
+                        </div>
+                        <input type="range" class="custom-slider" min="0" max="100" value="12" disabled>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: FINTECH & BRAND CONTRACTS -->
+        <div id="tab-finance" class="content-frame">
+            <div class="glass-card" style="margin-bottom: 32px; padding: 32px;">
+                <div class="fintech-header">
+                    <div>
+                        <div class="card-header-mono">Total Cumulative Revenue</div>
+                        <div class="balance-value">
+                            <span>$36,327.00</span>
+                            <span class="trend-up">↑ 24.5% MOON</span>
+                        </div>
+                    </div>
+                    <button class="btn-accent">Withdraw to Crypto / Bank</button>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header-mono">Active Brand Commercial Partnerships</div>
+                <table class="b2b-table">
+                    <thead>
+                        <tr>
+                            <th>Brand Deals</th>
+                            <th>Campaign Budget</th>
+                            <th>Author Share (RevShare)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="brand-meta">Nike Global Fashion Corp</td>
+                            <td class="mono-text">$42,000.00</td>
+                            <td class="mono-text" style="color: var(--accent);">70% ($29,400)</td>
+                            <td><span class="tag-mono tag-success">ACTIVE CONTRACT</span></td>
+                        </tr>
+                        <tr>
+                            <td class="brand-meta">Binance Labs Ecosystem</td>
+                            <td class="mono-text">$18,000.00</td>
+                            <td class="mono-text" style="color: var(--accent);">70% ($12,600)</td>
+                            <td><span class="tag-mono tag-progress">ON APPROVAL</span></td>
+                        </tr>
+                        <tr>
+                            <td class="brand-meta">Sony Interactive Entertainment</td>
+                            <td class="mono-text">$25,000.00</td>
+                            <td class="mono-text" style="color: var(--accent);">70% ($17,500)</td>
+                            <td><span class="tag-mono tag-progress">ON APPROVAL</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: DATASET MATRIX & TRAINING -->
+        <div id="tab-matrix" class="content-frame">
+            <div class="matrix-grid">
+                <div class="upload-zone">
+                    <div class="upload-icon">📥</div>
+                    <div class="upload-text">Drag new raw media source files or <span>browse</span></div>
+                    <div style="font-size: 11px; color: var(--text-dark); font-family: 'JetBrains Mono', monospace;">Supports MP4, WAV, OBJ слепки (Max 5GB)</div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="card-header-mono">Neural Audio Spectrum Dataset</div>
+                    <div style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Voice Biometric Matrix</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">AES-256 Encrypted & Isolated</div>
+                    
+                    <div class="svg-graph-container">
+                        <svg width="100%" height="100%" viewBox="0 0 400 100" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#FF7A00" stop-opacity="0.4"/>
+                                    <stop offset="100%" stop-color="#FF7A00" stop-opacity="0.0"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M0 80 Q 40 20, 80 50 T 160 30 T 240 70 T 320 20 T 400 60 L 400 100 L 0 100 Z" fill="url(#glow)"/>
+                            <path d="M0 80 Q 40 20, 80 50 T 160 30 T 240 70 T 320 20 T 400 60" fill="none" stroke="#FF7A00" stroke-width="2"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="card-header-mono">Facial Geometry Mesh Status</div>
+                    <div style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Low-Poly Tracking Mesh</div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+                            <span style="color: var(--text-muted);">POLYGON_COUNT:</span>
+                            <span>42,851 vertices</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+                            <span style="color: var(--text-muted);">MESH_INTEGRITY:</span>
+                            <span style="color: var(--success);">100% OK</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-muted);">SECURITY_KEY:</span>
+                            <span style="color: var(--accent);">SECURE_HASH_🔒</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function switchTab(tabId, element) {
+            // Hide all frames
+            const frames = document.querySelectorAll('.content-frame');
+            frames.forEach(f => f.classList.remove('active'));
+            
+            // Remove active from all items
+            const items = document.querySelectorAll('.nav-item');
+            items.forEach(i => i.classList.remove('active'));
+            
+            // Activate selected
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+            
+            // Change title
+            const titleMap = {
+                'tab-production': 'Content Production Pipeline',
+                'tab-finance': 'Brand Financial Dashboard',
+                'tab-matrix': 'Dataset Matrix & AI Training Hub'
+            };
+            document.getElementById('current-page-title').innerText = titleMap[tabId];
+        }
+
+        function updateSlider(valId, value) {
+            document.getElementById(valId).innerText = value + '%';
+        }
+    </script>
+</body>
+</html>
